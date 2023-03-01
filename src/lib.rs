@@ -1,4 +1,5 @@
 use pyo3::prelude::*;
+use pyo3::types::{PyDict, PyList, PyString};
 
 mod bitboard;
 mod board;
@@ -16,7 +17,10 @@ use crate::score::Score;
 use crate::square::Square;
 
 #[pyclass]
-pub struct ChessEnv {}
+pub struct ChessEnv {
+    pub board: Board,
+    pub step_num: u64,
+}
 
 #[pymethods]
 impl ChessEnv {
@@ -34,38 +38,79 @@ impl ChessEnv {
     // metadata
     // np_random
 
-    // pub fn next_state<'a>(
-    //     &mut self,
-    //     _py: Python<'a>,
-    //     state_py: &'a PyDict,
-    //     _player: &str,
-    //     _move: &str,
-    // ) -> PyResult<(&'a PyDict, isize)> {
-    //     todo!();
-    //     // parse state
-    //     // let state: State = convert_py_state(_py, state_py)?;
+    #[new]
+    pub fn new() -> Self {
+        Self {
+            board: Board::new(),
+            step_num: 0,
+        }
+    }
 
-    //     // // parse arguments
-    //     // let player: Color = player_string_to_enum(_player);
+    pub fn get_state<'a>(&mut self, py: Python<'a>) -> PyResult<&'a PyList> {
+        let state = self.board.state();
 
-    //     // // next state
-    //     // let move_union = engine::convert_move_to_type(_move);
-    //     // let (mut new_state, reward) = engine::next_state(&state, player, move_union);
+        let vec: Vec<Vec<Piece>> = vec![];
+        let state_list = PyList::new(py, vec);
 
-    //     // // update kings under attack
-    //     // engine::update_state(&mut new_state);
-    //     // // if both kings are checked, this position is impossible => raise exception
-    //     // if new_state.white_king_is_checked == true && new_state.black_king_is_checked == true {
-    //     //     println!("Both Kings are in check: this position is impossible");
-    //     //     PyException::new_err("Both Kings are in check: this position is impossible")
-    //     //         .restore(_py);
-    //     // }
+        for row in state {
+            let list = PyList::new(py, row);
+            state_list.append(list)?;
+        }
 
-    //     // // return new state
-    //     // let new_state_py = PyDict::new(_py);
-    //     // new_state.to_py_object(new_state_py);
-    //     // return Ok((new_state_py, reward));
-    // }
+        Ok(state_list)
+    }
+
+    pub fn get_actions(&self) -> Vec<BitMove> {
+        self.board.generate_moves()
+    }
+
+    pub fn reset<'a>(
+        &mut self,
+        py: Python<'a>,
+        seed: Option<i64>,
+        options: Option<&'a PyDict>,
+    ) -> PyResult<(&'a PyList, &'a PyDict)> {
+        self.board = Board::start_pos();
+        let obsrv = self.get_state(py)?;
+
+        let info = PyDict::new(py);
+
+        Ok((obsrv, info))
+    }
+
+    pub fn step<'a>(
+        &mut self,
+        py: Python<'a>,
+        action: BitMove,
+    ) -> PyResult<(&'a PyList, i64, bool, bool)> {
+        // input: action: ActType
+        // output: [ObsType, SupportsFloat, bool, bool, dict[str, Any]]
+
+        self.board.apply_move(action);
+        self.step_num += 1;
+        let obsrv = self.get_state(py)?;
+
+        let is_checkmate = self.board.checkmate();
+        let is_stalemate = self.board.stalemate();
+
+        let terminated = is_checkmate && is_stalemate;
+        let truncated = false;
+
+        // add to info: zobrist, fen
+        // add to state: basically the state from pleco::Board.Arc<State>
+
+        Ok((obsrv, 0, terminated, truncated))
+    }
+
+    pub fn render<'a>(&mut self, py: Python<'a>) -> PyResult<&'a PyString> {
+        let frame = self.board.pretty_string();
+        let py_frame = PyString::new(py, &frame);
+        Ok(py_frame)
+    }
+
+    pub fn close<'a>(&mut self, _py: Python<'a>) -> PyResult<()> {
+        Ok(())
+    }
 }
 
 /// A Python module implemented in Rust.

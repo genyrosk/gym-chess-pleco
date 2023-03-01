@@ -31,6 +31,18 @@ impl Board {
         }
     }
 
+    pub fn state(&self) -> [[Piece; 8]; 8] {
+        let piece_locations = self.inner.get_piece_locations();
+
+        let mut state = [[Piece::None; 8]; 8];
+        for (idx, (_, piece)) in piece_locations.into_iter().enumerate() {
+            let i = idx % 8;
+            let j = idx / 8;
+            state[i][j] = piece.into();
+        }
+        state
+    }
+
     // pub fn random(&self) -> PyResult<()> {
     //     todo!();
     // }

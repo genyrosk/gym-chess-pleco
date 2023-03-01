@@ -190,6 +190,13 @@ impl Piece {
     }
 }
 
+impl ToPyObject for Piece {
+    fn to_object(&self, py: Python<'_>) -> PyObject {
+        let obj: PyObject = Py::new(py, *self).unwrap().into_py(py);
+        obj
+    }
+}
+
 impl From<pleco::Piece> for Piece {
     fn from(piece: pleco::Piece) -> Piece {
         match piece {

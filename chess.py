@@ -1,4 +1,4 @@
-from gym_chess_pleco import Board, Piece, PieceType, Square, Player, GenTypes
+from gym_chess_pleco import ChessEnv, Board, Piece, PieceType, Square, Player, GenTypes
 
 
 board = Board()
