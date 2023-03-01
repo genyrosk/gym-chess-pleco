@@ -1,178 +1,18 @@
 use pyo3::prelude::*;
-// use pyo3::types::Py
-// use std::convert::From;
-// use std::fmt;
-// use std::fmt::Debug;
 
+mod bitboard;
+mod core;
 mod error;
 mod piece_move;
+mod score;
+mod square;
 
+use crate::bitboard::BitBoard;
+use crate::core::{CastleType, GenTypes, Piece, PieceType, Player};
 use crate::error::CustomError;
 use crate::piece_move::{BitMove, ScoringMove};
-
-#[pyclass]
-#[repr(u8)]
-enum Player {
-    White = 0,
-    Black = 1,
-}
-
-#[pymethods]
-impl Player {
-    fn __repr__(&self) -> String {
-        match self {
-            Player::White => "White".to_string(),
-            Player::Black => "Black".to_string(),
-        }
-    }
-}
-
-impl From<pleco::Player> for Player {
-    fn from(player: pleco::Player) -> Player {
-        match player {
-            pleco::Player::White => Player::White,
-            pleco::Player::Black => Player::Black,
-        }
-    }
-}
-
-impl From<Player> for pleco::Player {
-    fn from(player: Player) -> pleco::Player {
-        match player {
-            Player::White => pleco::Player::White,
-            Player::Black => pleco::Player::Black,
-        }
-    }
-}
-
-#[pyclass]
-#[derive(Copy, Clone, Debug)]
-pub enum GenTypes {
-    All,
-    Captures,
-    Quiets,
-    QuietChecks,
-    Evasions,
-    NonEvasions,
-}
-
-#[pymethods]
-impl GenTypes {
-    fn __repr__(&self) -> String {
-        match self {
-            GenTypes::All => "White".to_string(),
-            GenTypes::Captures => "Captures".to_string(),
-            GenTypes::Quiets => "Quiets".to_string(),
-            GenTypes::QuietChecks => "QuietChecks".to_string(),
-            GenTypes::Evasions => "Evasions".to_string(),
-            GenTypes::NonEvasions => "NonEvasions".to_string(),
-        }
-    }
-}
-
-impl From<pleco::core::GenTypes> for GenTypes {
-    fn from(gen_type: pleco::core::GenTypes) -> GenTypes {
-        match gen_type {
-            pleco::core::GenTypes::All => GenTypes::All,
-            pleco::core::GenTypes::Captures => GenTypes::Captures,
-            pleco::core::GenTypes::Quiets => GenTypes::Quiets,
-            pleco::core::GenTypes::QuietChecks => GenTypes::QuietChecks,
-            pleco::core::GenTypes::Evasions => GenTypes::Evasions,
-            pleco::core::GenTypes::NonEvasions => GenTypes::NonEvasions,
-        }
-    }
-}
-
-impl From<GenTypes> for pleco::core::GenTypes {
-    fn from(gen_type: GenTypes) -> pleco::core::GenTypes {
-        match gen_type {
-            GenTypes::All => pleco::core::GenTypes::All,
-            GenTypes::Captures => pleco::core::GenTypes::Captures,
-            GenTypes::Quiets => pleco::core::GenTypes::Quiets,
-            GenTypes::QuietChecks => pleco::core::GenTypes::QuietChecks,
-            GenTypes::Evasions => pleco::core::GenTypes::Evasions,
-            GenTypes::NonEvasions => pleco::core::GenTypes::NonEvasions,
-        }
-    }
-}
-
-#[pyclass]
-#[repr(u8)]
-#[derive(Copy, Clone, Debug)]
-pub enum PieceType {
-    None = 0,
-    P = 1,
-    N = 2,
-    B = 3,
-    R = 4,
-    Q = 5,
-    K = 6,
-    All = 7,
-}
-
-#[pymethods]
-impl PieceType {
-    fn __repr__(&self) -> String {
-        Into::<pleco::core::PieceType>::into(*self).to_string()
-    }
-}
-
-impl From<pleco::core::PieceType> for PieceType {
-    fn from(piece_type: pleco::core::PieceType) -> PieceType {
-        match piece_type {
-            pleco::core::PieceType::P => PieceType::P,
-            pleco::core::PieceType::N => PieceType::N,
-            pleco::core::PieceType::B => PieceType::B,
-            pleco::core::PieceType::R => PieceType::R,
-            pleco::core::PieceType::Q => PieceType::Q,
-            pleco::core::PieceType::K => PieceType::K,
-            pleco::core::PieceType::All => PieceType::All,
-            pleco::core::PieceType::None => PieceType::None,
-        }
-    }
-}
-
-impl From<PieceType> for pleco::core::PieceType {
-    fn from(piece_type: PieceType) -> pleco::core::PieceType {
-        match piece_type {
-            PieceType::P => pleco::core::PieceType::P,
-            PieceType::N => pleco::core::PieceType::N,
-            PieceType::B => pleco::core::PieceType::B,
-            PieceType::R => pleco::core::PieceType::R,
-            PieceType::Q => pleco::core::PieceType::Q,
-            PieceType::K => pleco::core::PieceType::K,
-            PieceType::All => pleco::core::PieceType::All,
-            PieceType::None => pleco::core::PieceType::None,
-        }
-    }
-}
-
-#[pyclass]
-#[repr(transparent)]
-#[derive(Copy, Clone, Debug)]
-pub struct SQ(pub u8);
-
-#[pymethods]
-impl SQ {
-    fn __repr__(&self) -> String {
-        let sq = Into::<pleco::core::sq::SQ>::into(*self);
-        sq.to_string()
-    }
-}
-
-impl From<pleco::core::sq::SQ> for SQ {
-    fn from(sq: pleco::core::sq::SQ) -> SQ {
-        SQ(sq.0)
-    }
-}
-
-impl From<SQ> for pleco::core::sq::SQ {
-    fn from(sq: SQ) -> pleco::core::sq::SQ {
-        pleco::core::sq::SQ(sq.0)
-    }
-}
-
-// Piece
+use crate::score::Score;
+use crate::square::Square;
 
 #[pyclass]
 pub struct Board {
@@ -188,42 +28,42 @@ impl Board {
         }
     }
 
-    fn __repr__(&self) -> String {
+    pub fn __repr__(&self) -> String {
         self.inner.pretty_string()
     }
 
     #[staticmethod]
-    fn start_pos() -> Board {
+    pub fn start_pos() -> Board {
         Board {
             inner: pleco::Board::start_pos(),
         }
     }
 
-    // fn random(&self) -> PyResult<()> {
+    // pub fn random(&self) -> PyResult<()> {
     //     todo!();
     // }
 
     #[staticmethod]
-    fn from_fen(fen: &str) -> PyResult<Board> {
+    pub fn from_fen(fen: &str) -> PyResult<Board> {
         let x = pleco::Board::from_fen(fen)
             .map(|board| Board { inner: board })
             .map_err(|err| Into::<CustomError>::into(err).into());
         x
     }
 
-    fn fen(&self) -> String {
+    pub fn fen(&self) -> String {
         self.inner.fen()
     }
 
-    fn apply_move(&mut self, bit_move: BitMove) {
+    pub fn apply_move(&mut self, bit_move: BitMove) {
         self.inner.apply_move(bit_move.into());
     }
 
-    fn undo_move(&mut self) {
+    pub fn undo_move(&mut self) {
         self.inner.undo_move();
     }
 
-    fn generate_moves(&self) -> Vec<BitMove> {
+    pub fn generate_moves(&self) -> Vec<BitMove> {
         let move_list = self
             .inner
             .generate_moves()
@@ -234,7 +74,7 @@ impl Board {
         move_list
     }
 
-    fn generate_scoring_moves(&self) -> Vec<ScoringMove> {
+    pub fn generate_scoring_moves(&self) -> Vec<ScoringMove> {
         let move_list = self
             .inner
             .generate_scoring_moves()
@@ -245,7 +85,7 @@ impl Board {
         move_list
     }
 
-    fn generate_pseudolegal_moves(&self) -> Vec<BitMove> {
+    pub fn generate_pseudolegal_moves(&self) -> Vec<BitMove> {
         let move_list = self
             .inner
             .generate_pseudolegal_moves()
@@ -256,271 +96,287 @@ impl Board {
         move_list
     }
 
-    // fn generate_moves_of_type(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn generate_moves_of_type(&self, gen_type: GenTypes) -> Vec<BitMove> {
+        let move_list = self
+            .inner
+            .generate_moves_of_type(gen_type.into())
+            .to_vec()
+            .into_iter()
+            .map(|m| m.into())
+            .collect::<Vec<_>>();
+        move_list
+    }
 
-    // fn generate_pseudolegal_moves_of_type(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn generate_pseudolegal_moves_of_type(&self, gen_type: GenTypes) -> Vec<BitMove> {
+        let move_list = self
+            .inner
+            .generate_pseudolegal_moves_of_type(gen_type.into())
+            .to_vec()
+            .into_iter()
+            .map(|m| m.into())
+            .collect::<Vec<_>>();
+        move_list
+    }
 
-    fn turn(&self) -> Player {
+    pub fn turn(&self) -> Player {
         self.inner.turn().into()
     }
 
-    // fn zobrist(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn zobrist(&self) -> u64 {
+        self.inner.zobrist()
+    }
 
-    // fn pawn_key(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn pawn_key(&self) -> u64 {
+        self.inner.pawn_key()
+    }
 
-    // fn moves_played(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn moves_played(&self) -> u16 {
+        self.inner.moves_played()
+    }
 
-    // fn depth(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn depth(&self) -> u16 {
+        self.inner.depth()
+    }
 
-    // fn rule_50(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn rule_50(&self) -> i16 {
+        self.inner.rule_50()
+    }
 
-    // fn piece_captured_last_turn(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn piece_captured_last_turn(&self) -> PieceType {
+        self.inner.piece_captured_last_turn().into()
+    }
 
-    // fn ply(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn ply(&self) -> u16 {
+        self.inner.ply()
+    }
 
-    // fn psq(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn psq(&self) -> Score {
+        self.inner.psq().into()
+    }
 
-    // fn ep_square(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn ep_square(&self) -> Square {
+        self.inner.ep_square().into()
+    }
 
-    // fn occupied(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn occupied(&self) -> BitBoard {
+        self.inner.occupied().into()
+    }
 
-    // fn empty(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn empty(&self, sq: Square) -> bool {
+        self.inner.empty(sq.into())
+    }
 
-    // fn get_occupied_player(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn get_occupied_player(&self, player: Player) -> BitBoard {
+        self.inner.get_occupied_player(player.into()).into()
+    }
 
-    // fn occupied_white(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn occupied_white(&self) -> BitBoard {
+        self.inner.occupied_white().into()
+    }
 
-    // fn occupied_black(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn occupied_black(&self) -> BitBoard {
+        self.inner.occupied_black().into()
+    }
 
-    // fn piece_bb(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn piece_bb(&self, player: Player, piece: PieceType) -> BitBoard {
+        self.inner.piece_bb(player.into(), piece.into()).into()
+    }
 
-    // fn sliding_piece_bb(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn sliding_piece_bb(&self, player: Player) -> BitBoard {
+        self.inner.sliding_piece_bb(player.into()).into()
+    }
 
-    // fn diagonal_piece_bb(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn diagonal_piece_bb(&self, player: Player) -> BitBoard {
+        self.inner.diagonal_piece_bb(player.into()).into()
+    }
 
-    // fn piece_bb_both_players(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn piece_bb_both_players(&self, piece: PieceType) -> BitBoard {
+        self.inner.piece_bb_both_players(piece.into()).into()
+    }
 
-    // fn piece_two_bb_both_players(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn piece_two_bb_both_players(&self, piece: PieceType, piece2: PieceType) -> BitBoard {
+        self.inner
+            .piece_two_bb_both_players(piece.into(), piece2.into())
+            .into()
+    }
 
-    // fn piece_two_bb(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn piece_two_bb(&self, piece: PieceType, piece2: PieceType, player: Player) -> BitBoard {
+        self.inner
+            .piece_two_bb(piece.into(), piece2.into(), player.into())
+            .into()
+    }
 
-    // fn count_piece(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn count_piece(&self, player: Player, piece: PieceType) -> u8 {
+        self.inner.count_piece(player.into(), piece.into())
+    }
 
-    // fn count_pieces_player(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn count_pieces_player(&self, player: Player) -> u8 {
+        self.inner.count_pieces_player(player.into())
+    }
 
-    // fn count_all_pieces(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn count_all_pieces(&self) -> u8 {
+        self.inner.count_all_pieces()
+    }
 
-    // fn piece_at_sq(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn piece_at_sq(&self, sq: Square) -> Piece {
+        self.inner.piece_at_sq(sq.into()).into()
+    }
 
-    // fn king_sq(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn king_sq(&self, player: Player) -> Square {
+        self.inner.king_sq(player.into()).into()
+    }
 
-    // fn pinned_pieces(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn pinned_pieces(&self, player: Player) -> BitBoard {
+        self.inner.pinned_pieces(player.into()).into()
+    }
 
-    // fn all_pinned_pieces(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn all_pinned_pieces(&self, player: Player) -> BitBoard {
+        self.inner.all_pinned_pieces(player.into()).into()
+    }
 
-    // fn pinning_pieces(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn pinning_pieces(&self, player: Player) -> BitBoard {
+        self.inner.pinning_pieces(player.into()).into()
+    }
 
-    // fn castling_bits(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn castling_bits(&self) -> u8 {
+        self.inner.castling_bits()
+    }
 
-    // fn can_castle(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn can_castle(&self, player: Player, castle_type: CastleType) -> bool {
+        self.inner.can_castle(player.into(), castle_type.into())
+    }
 
-    // fn player_can_castle(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn castle_impeded(&self, castle_type: CastleType) -> bool {
+        self.inner.castle_impeded(castle_type.into())
+    }
 
-    // fn castle_impeded(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn castling_rook_square(&self, castle_type: CastleType) -> Square {
+        self.inner.castling_rook_square(castle_type.into()).into()
+    }
 
-    // fn castling_rook_square(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn last_move(&self) -> Option<BitMove> {
+        self.inner.last_move().map(|m| m.into())
+    }
 
-    // fn last_move(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn piece_last_captured(&self) -> PieceType {
+        self.inner.piece_last_captured().into()
+    }
 
-    // fn piece_last_captured(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn material_key(&self) -> u64 {
+        self.inner.material_key()
+    }
 
-    // fn material_key(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn non_pawn_material(&self, player: Player) -> i32 {
+        self.inner.non_pawn_material(player.into())
+    }
 
-    // fn non_pawn_material(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn non_pawn_material_all(&self) -> i32 {
+        self.inner.non_pawn_material_all()
+    }
 
-    // fn non_pawn_material_all(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    //  ------- CHECKING  -------
 
-    // fn in_check(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn in_check(&self) -> bool {
+        self.inner.in_check()
+    }
 
-    // fn checkmate(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn checkmate(&self) -> bool {
+        self.inner.checkmate()
+    }
 
-    // fn stalemate(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn stalemate(&self) -> bool {
+        self.inner.stalemate()
+    }
 
-    // fn checkers(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn checkers(&self) -> BitBoard {
+        self.inner.checkers().into()
+    }
 
-    // fn discovered_check_candidates(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn discovered_check_candidates(&self) -> BitBoard {
+        self.inner.discovered_check_candidates().into()
+    }
 
-    // fn pieces_pinned(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn pieces_pinned(&self, player: Player) -> BitBoard {
+        self.inner.pieces_pinned(player.into()).into()
+    }
 
-    // fn attackers_to(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn attackers_to(&self, sq: Square, occupied: BitBoard) -> BitBoard {
+        self.inner.attackers_to(sq.into(), occupied.into()).into()
+    }
 
-    // fn attacks_from(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn attacks_from(&self, piece: PieceType, sq: Square, player: Player) -> BitBoard {
+        self.inner
+            .attacks_from(piece.into(), sq.into(), player.into())
+            .into()
+    }
 
-    // fn pawn_passed(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn pawn_passed(&self, player: Player, sq: Square) -> bool {
+        self.inner.pawn_passed(player.into(), sq.into()).into()
+    }
 
-    // fn legal_move(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    //  ------- Move Testing -------
 
-    // fn pseudo_legal_move(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn legal_move(&self, m: BitMove) -> bool {
+        self.inner.legal_move(m.into())
+    }
 
-    // fn opposite_bishops(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn pseudo_legal_move(&self, m: BitMove) -> bool {
+        self.inner.pseudo_legal_move(m.into())
+    }
 
-    // fn advanced_pawn_push(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn opposite_bishops(&self) -> bool {
+        self.inner.opposite_bishops()
+    }
 
-    // fn is_capture(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn advanced_pawn_push(&self, mov: BitMove) -> bool {
+        self.inner.advanced_pawn_push(mov.into())
+    }
 
-    // fn is_capture_or_promotion(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn is_capture(&self, mov: BitMove) -> bool {
+        self.inner.is_capture(mov.into())
+    }
 
-    // fn gives_check(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn is_capture_or_promotion(&self, mov: BitMove) -> bool {
+        self.inner.is_capture_or_promotion(mov.into())
+    }
 
-    // fn see_ge(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn gives_check(&self, m: BitMove) -> bool {
+        self.inner.gives_check(m.into())
+    }
 
-    // fn moved_piece(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn see_ge(&self, mov: BitMove, threshold: i32) -> bool {
+        self.inner.see_ge(mov.into(), threshold)
+    }
 
-    // fn captured_piece(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn moved_piece(&self, m: BitMove) -> Piece {
+        self.inner.moved_piece(m.into()).into()
+    }
 
-    // fn key_after(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn captured_piece(&self, m: BitMove) -> PieceType {
+        self.inner.captured_piece(m.into()).into()
+    }
 
-    // fn pretty_string(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn key_after(&self, m: BitMove) -> u64 {
+        self.inner.key_after(m.into())
+    }
 
-    // fn get_piece_locations(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn pretty_string(&self) -> String {
+        self.inner.pretty_string()
+    }
 
-    // fn print_debug_info(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn print_debug_info(&self) {
+        self.inner.print_debug_info();
+    }
 
-    // fn pretty_print(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn pretty_print(&self) {
+        self.inner.pretty_print();
+    }
 
-    // fn fancy_print(&self) -> PyResult<()> {
-    //     todo!();
-    // }
+    pub fn fancy_print(&self) {
+        self.inner.fancy_print();
+    }
 
-    // fn next_state<'a>(
+    // pub fn next_state<'a>(
     //     &mut self,
     //     _py: Python<'a>,
     //     state_py: &'a PyDict,
@@ -554,16 +410,14 @@ impl Board {
     // }
 }
 
-/// Formats the sum of two numbers as string.
-#[pyfunction]
-fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
-    Ok((a + b).to_string())
-}
-
 /// A Python module implemented in Rust.
 #[pymodule]
 fn gym_chess_pleco(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(sum_as_string, m)?)?;
     m.add_class::<Board>()?;
+    m.add_class::<Player>()?;
+    m.add_class::<GenTypes>()?;
+    m.add_class::<PieceType>()?;
+    m.add_class::<Piece>()?;
+    m.add_class::<Square>()?;
     Ok(())
 }

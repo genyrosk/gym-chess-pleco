@@ -1,6 +1,8 @@
-use pleco::{Board, PieceType, Player};
+use pleco::{Board, Piece, PieceType, Player, SQ};
 
 fn main() {
+    println!("Hello World");
+
     let board = Board::start_pos();
     let board_fen = board.fen();
     println!("board_fen: {}", board_fen);
@@ -11,5 +13,6 @@ fn main() {
         println!("move: {}", move_);
     }
 
-    println!("Hello World");
+    let sq = SQ::A1;
+    println!("square: {}", sq);
 }
