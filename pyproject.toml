@@ -1,0 +1,29 @@
+[build-system]
+requires = ["maturin>=0.14,<0.15"]
+build-backend = "maturin"
+
+[project]
+name = "gym-chess-pleco"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+
+[tool.poetry]
+name = "gym-chess-pleco"
+version = "0.1.0"
+description = ""
+authors = ["Evgeny Roskach <e.roskach@gmail.com>"]
+# readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.8"
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.1.0"
+ipython = "^8.10.0"
