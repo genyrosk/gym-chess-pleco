@@ -45,11 +45,132 @@ impl From<Player> for pleco::Player {
     }
 }
 
-// GenTypes
+#[pyclass]
+#[derive(Copy, Clone, Debug)]
+pub enum GenTypes {
+    All,
+    Captures,
+    Quiets,
+    QuietChecks,
+    Evasions,
+    NonEvasions,
+}
 
-// PieceType
+#[pymethods]
+impl GenTypes {
+    fn __repr__(&self) -> String {
+        match self {
+            GenTypes::All => "White".to_string(),
+            GenTypes::Captures => "Captures".to_string(),
+            GenTypes::Quiets => "Quiets".to_string(),
+            GenTypes::QuietChecks => "QuietChecks".to_string(),
+            GenTypes::Evasions => "Evasions".to_string(),
+            GenTypes::NonEvasions => "NonEvasions".to_string(),
+        }
+    }
+}
 
-// SQ
+impl From<pleco::core::GenTypes> for GenTypes {
+    fn from(gen_type: pleco::core::GenTypes) -> GenTypes {
+        match gen_type {
+            pleco::core::GenTypes::All => GenTypes::All,
+            pleco::core::GenTypes::Captures => GenTypes::Captures,
+            pleco::core::GenTypes::Quiets => GenTypes::Quiets,
+            pleco::core::GenTypes::QuietChecks => GenTypes::QuietChecks,
+            pleco::core::GenTypes::Evasions => GenTypes::Evasions,
+            pleco::core::GenTypes::NonEvasions => GenTypes::NonEvasions,
+        }
+    }
+}
+
+impl From<GenTypes> for pleco::core::GenTypes {
+    fn from(gen_type: GenTypes) -> pleco::core::GenTypes {
+        match gen_type {
+            GenTypes::All => pleco::core::GenTypes::All,
+            GenTypes::Captures => pleco::core::GenTypes::Captures,
+            GenTypes::Quiets => pleco::core::GenTypes::Quiets,
+            GenTypes::QuietChecks => pleco::core::GenTypes::QuietChecks,
+            GenTypes::Evasions => pleco::core::GenTypes::Evasions,
+            GenTypes::NonEvasions => pleco::core::GenTypes::NonEvasions,
+        }
+    }
+}
+
+#[pyclass]
+#[repr(u8)]
+#[derive(Copy, Clone, Debug)]
+pub enum PieceType {
+    None = 0,
+    P = 1,
+    N = 2,
+    B = 3,
+    R = 4,
+    Q = 5,
+    K = 6,
+    All = 7,
+}
+
+#[pymethods]
+impl PieceType {
+    fn __repr__(&self) -> String {
+        Into::<pleco::core::PieceType>::into(*self).to_string()
+    }
+}
+
+impl From<pleco::core::PieceType> for PieceType {
+    fn from(piece_type: pleco::core::PieceType) -> PieceType {
+        match piece_type {
+            pleco::core::PieceType::P => PieceType::P,
+            pleco::core::PieceType::N => PieceType::N,
+            pleco::core::PieceType::B => PieceType::B,
+            pleco::core::PieceType::R => PieceType::R,
+            pleco::core::PieceType::Q => PieceType::Q,
+            pleco::core::PieceType::K => PieceType::K,
+            pleco::core::PieceType::All => PieceType::All,
+            pleco::core::PieceType::None => PieceType::None,
+        }
+    }
+}
+
+impl From<PieceType> for pleco::core::PieceType {
+    fn from(piece_type: PieceType) -> pleco::core::PieceType {
+        match piece_type {
+            PieceType::P => pleco::core::PieceType::P,
+            PieceType::N => pleco::core::PieceType::N,
+            PieceType::B => pleco::core::PieceType::B,
+            PieceType::R => pleco::core::PieceType::R,
+            PieceType::Q => pleco::core::PieceType::Q,
+            PieceType::K => pleco::core::PieceType::K,
+            PieceType::All => pleco::core::PieceType::All,
+            PieceType::None => pleco::core::PieceType::None,
+        }
+    }
+}
+
+#[pyclass]
+#[repr(transparent)]
+#[derive(Copy, Clone, Debug)]
+pub struct SQ(pub u8);
+
+#[pymethods]
+impl SQ {
+    fn __repr__(&self) -> String {
+        let sq = Into::<pleco::core::sq::SQ>::into(*self);
+        sq.to_string()
+    }
+}
+
+impl From<pleco::core::sq::SQ> for SQ {
+    fn from(sq: pleco::core::sq::SQ) -> SQ {
+        SQ(sq.0)
+    }
+}
+
+impl From<SQ> for pleco::core::sq::SQ {
+    fn from(sq: SQ) -> pleco::core::sq::SQ {
+        pleco::core::sq::SQ(sq.0)
+    }
+}
 
 // Piece
 
