@@ -1,10 +1,10 @@
-# from gym_chess_pleco import ChessEnv, Board, Piece, PieceType, Square, Player, GenTypes
+from gym_chess_pleco import ChessEnv, Board, Piece, PieceType, Square, Player, GenTypes
 
 
-# board = Board()
+board = Board()
 
-# print(board.fen())
-# print(board)
+print(board.fen())
+print(board)
 
 
 def sq_to_coords(sq: str):

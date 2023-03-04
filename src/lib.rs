@@ -162,6 +162,15 @@ impl ChessEnv {
         let action = Action((u8::from(sq_src) as u16) * 73 + directional_move);
         return action;
     }
+
+    fn generate_actions(&mut self) {
+        self.action_moves_map = self
+            .board
+            .generate_moves()
+            .into_iter()
+            .map(|bit_move| (ChessEnv::move_to_action(&bit_move.clone().into()), bit_move))
+            .collect::<HashMap<_, _>>();
+    }
 }
 
 #[pymethods]
@@ -182,11 +191,13 @@ impl ChessEnv {
 
     #[new]
     pub fn new() -> Self {
-        Self {
+        let mut env = Self {
             board: Board::new(),
             step_num: 0,
             action_moves_map: HashMap::new(),
-        }
+        };
+        env.generate_actions();
+        env
     }
 
     pub fn get_state<'a>(&mut self, py: Python<'a>) -> PyResult<&'a PyList> {
@@ -203,8 +214,14 @@ impl ChessEnv {
         Ok(state_list)
     }
 
-    pub fn get_actions(&self) -> Vec<&Action> {
-        self.action_moves_map.keys().collect::<Vec<_>>()
+    pub fn get_actions<'a>(&self, py: Python<'a>) -> &'a PyList {
+        let x = self
+            .action_moves_map
+            .keys()
+            .map(|x| x.0)
+            .collect::<Vec<_>>();
+        let y = PyList::new(py, x);
+        y
     }
 
     pub fn reset<'a>(
@@ -224,12 +241,15 @@ impl ChessEnv {
     pub fn step<'a>(
         &mut self,
         py: Python<'a>,
-        action: BitMove,
+        action: u16,
     ) -> PyResult<(&'a PyList, i64, bool, bool)> {
         // input: action: ActType
         // output: [ObsType, SupportsFloat, bool, bool, dict[str, Any]]
 
-        self.board.apply_move(action);
+        let action = Action(action);
+        let bit_move = self.action_moves_map.get(&action).unwrap().clone();
+
+        self.board.apply_move(bit_move);
         self.step_num += 1;
         let obsrv = self.get_state(py)?;
 
@@ -241,12 +261,7 @@ impl ChessEnv {
 
         // add to info: zobrist, fen
         // add to state: basically the state from pleco::Board.Arc<State>
-        self.action_moves_map = self
-            .board
-            .generate_moves()
-            .into_iter()
-            .map(|bit_move| (ChessEnv::move_to_action(&bit_move.clone().into()), bit_move))
-            .collect::<HashMap<_, _>>();
+        self.generate_actions();
 
         Ok((obsrv, 0, terminated, truncated))
     }
