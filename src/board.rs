@@ -1,6 +1,6 @@
 use crate::bitboard::BitBoard;
 use crate::core::{CastleType, GenTypes, Piece, PieceType, Player};
-use crate::error::CustomError;
+use crate::error::FenBuildError;
 use crate::piece_move::{BitMove, ScoringMove};
 use crate::score::Score;
 use crate::square::Square;
@@ -51,7 +51,7 @@ impl Board {
     pub fn from_fen(fen: &str) -> PyResult<Board> {
         let x = pleco::Board::from_fen(fen)
             .map(|board| Board { inner: board })
-            .map_err(|err| Into::<CustomError>::into(err).into());
+            .map_err(|err| Into::<FenBuildError>::into(err).into());
         x
     }
 
