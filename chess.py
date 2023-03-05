@@ -6,6 +6,13 @@ board = Board()
 print(board.fen())
 print(board)
 
+env = ChessEnv()
+actions = env.get_actions()
+
+print(actions)
+
+mask = env.get_action_mask()
+
 
 def sq_to_coords(sq: str):
     x = ord(sq[0]) - 97

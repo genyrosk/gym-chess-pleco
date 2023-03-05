@@ -5,7 +5,7 @@ use std::convert::From;
 ///
 /// A `BitMove` consists of 16 bits, all of which to include a source square, destination square,
 /// and special move-flags to differentiate types of moves.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 #[pyclass]
 pub struct BitMove {
     data: u16,
@@ -20,6 +20,12 @@ impl BitMove {
 #[pymethods]
 impl BitMove {
     fn __repr__(&self) -> String {
+        self.to_string()
+    }
+}
+
+impl ToString for BitMove {
+    fn to_string(&self) -> String {
         pleco::BitMove::new(self.data).stringify()
     }
 }
