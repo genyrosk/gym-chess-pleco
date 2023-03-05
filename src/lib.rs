@@ -129,11 +129,16 @@ impl ChessEnv {
     // - close()
     //
     // Optional
-    // - action_space
-    // - observation_space
-    // - reward_range
-    // - spec
-    // - metadata
+    // - self.action_space = gynmasium.spaces.Discrete(4762)
+    // - self.observation_space = gynmasium.spaces.MultiDiscrete([13]*64) ie 13 possible
+    //                            observations on 64 squares
+    //                          = Box(low=0, high=12, shape=(8, 8), dtype=np.int32)
+    //                            for a chessboard style 2D space
+    // - reward_range: A tuple corresponding to the minimum and maximum possible
+    //                rewards for an agent over an episode. Default is (-inf,+inf)
+    // - spec: An environment spec that contains the information used to
+    //         initialize the environment from gymnasium.make()
+    // - metadata: - The metadata of the environment, i.e. render modes, render fps
     // - np_random
 
     #[new]
